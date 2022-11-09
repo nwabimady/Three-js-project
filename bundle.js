@@ -33023,6 +33023,127 @@ function toJSON( shapes, data ) {
 
 }
 
+class SphereGeometry extends BufferGeometry {
+
+	constructor( radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI ) {
+
+		super();
+		this.type = 'SphereGeometry';
+
+		this.parameters = {
+			radius: radius,
+			widthSegments: widthSegments,
+			heightSegments: heightSegments,
+			phiStart: phiStart,
+			phiLength: phiLength,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength
+		};
+
+		widthSegments = Math.max( 3, Math.floor( widthSegments ) );
+		heightSegments = Math.max( 2, Math.floor( heightSegments ) );
+
+		const thetaEnd = Math.min( thetaStart + thetaLength, Math.PI );
+
+		let index = 0;
+		const grid = [];
+
+		const vertex = new Vector3();
+		const normal = new Vector3();
+
+		// buffers
+
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+
+		// generate vertices, normals and uvs
+
+		for ( let iy = 0; iy <= heightSegments; iy ++ ) {
+
+			const verticesRow = [];
+
+			const v = iy / heightSegments;
+
+			// special case for the poles
+
+			let uOffset = 0;
+
+			if ( iy == 0 && thetaStart == 0 ) {
+
+				uOffset = 0.5 / widthSegments;
+
+			} else if ( iy == heightSegments && thetaEnd == Math.PI ) {
+
+				uOffset = - 0.5 / widthSegments;
+
+			}
+
+			for ( let ix = 0; ix <= widthSegments; ix ++ ) {
+
+				const u = ix / widthSegments;
+
+				// vertex
+
+				vertex.x = - radius * Math.cos( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+				vertex.y = radius * Math.cos( thetaStart + v * thetaLength );
+				vertex.z = radius * Math.sin( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+				// normal
+
+				normal.copy( vertex ).normalize();
+				normals.push( normal.x, normal.y, normal.z );
+
+				// uv
+
+				uvs.push( u + uOffset, 1 - v );
+
+				verticesRow.push( index ++ );
+
+			}
+
+			grid.push( verticesRow );
+
+		}
+
+		// indices
+
+		for ( let iy = 0; iy < heightSegments; iy ++ ) {
+
+			for ( let ix = 0; ix < widthSegments; ix ++ ) {
+
+				const a = grid[ iy ][ ix + 1 ];
+				const b = grid[ iy ][ ix ];
+				const c = grid[ iy + 1 ][ ix ];
+				const d = grid[ iy + 1 ][ ix + 1 ];
+
+				if ( iy !== 0 || thetaStart > 0 ) indices.push( a, b, d );
+				if ( iy !== heightSegments - 1 || thetaEnd < Math.PI ) indices.push( b, c, d );
+
+			}
+
+		}
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+	}
+
+	static fromJSON( data ) {
+
+		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
 /**
  * parameters = {
  *  color: <THREE.Color>
@@ -44678,124 +44799,83 @@ function createBoundingSphere(object3d, out) {
 }
 
 const subsetOfTHREE = {
-    MOUSE,
-    Vector2,
-    Vector3,
-    Vector4,
-    Quaternion,
-    Matrix4,
-    Spherical,
-    Box3,
-    Sphere,
-    Raycaster,
-    MathUtils: {
-      DEG2RAD: MathUtils.DEG2RAD,
-      clamp: MathUtils.clamp
-    }
-  };
-  
-  const canvas = document.getElementById("three-canvas");
+  MOUSE,
+  Vector2,
+  Vector3,
+  Vector4,
+  Quaternion,
+  Matrix4,
+  Spherical,
+  Box3,
+  Sphere,
+  Raycaster,
+  MathUtils: {
+    DEG2RAD: MathUtils.DEG2RAD,
+    clamp: MathUtils.clamp
+  }
+};
 
-// 1 The scene
+const canvas = document.getElementById("three-canvas");
 
+//1 The scene
 const scene = new Scene();
 
-    
 //2 The Object
+const sphereGeometry = new SphereGeometry(0.5);
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+const solarSystem = new Object3D();
+scene.add(solarSystem);
 
-const loadingManager = new LoadingManager();
-const loadingElem = document.querySelector('#loading');
-const progressBar = loadingElem.querySelector('.progressbar');
+const sunMaterial = new MeshBasicMaterial({color: 'yellow' });
+const sunMesh= new Mesh(sphereGeometry, sunMaterial);
+solarSystem.add(sunMesh);
 
-const images = [];
-for (let i = 0; i < 6; i++) {
-	images.push(`https://picsum.photos/200/300?random=${i}`);
-}
+const earthMaterial = new MeshBasicMaterial({color: 'blue' });
+const earthMesh = new Mesh(sphereGeometry, earthMaterial);
+earthMesh.position.set(5, 0, 0);
+sunMesh.add(earthMesh);
 
-const textureLoader = new TextureLoader(loadingManager);
-const materials = [
-	new MeshBasicMaterial({ map: textureLoader.load(images[0]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[1]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[2]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[3]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[4]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[5]) }),
-];
+const moonMaterial = new MeshBasicMaterial({color: 'white' });
+const moonMesh = new Mesh(sphereGeometry, moonMaterial);
+moonMesh.scale.set(0.5, 0.5, 0.5);
+moonMesh.position.set(1, 0, 0);
+earthMesh.add(moonMesh);
 
-loadingManager.onLoad = () => {
-	loadingElem.style.display = 'none';
-	const cube = new Mesh(geometry, materials);
-	scene.add(cube);
-};
 
-loadingManager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => {
-	const progress = itemsLoaded / itemsTotal;
-	progressBar.style.transform = `scaleX(${progress})`;
-};
-
-    
-
-// The Camera
-  
+//3 The Camera
 const camera = new PerspectiveCamera(
-    75,
-    canvas.clientWidth / canvas.clientHeight
-  );
-  camera.position.z = 3;
-  scene.add(camera);
+  75,
+  canvas.clientWidth / canvas.clientHeight
+);
+camera.position.z = 3;
+camera.position.y = 6;
+camera.lookAt(solarSystem);
+scene.add(camera);
 
-window.addEventListener("mousemove", (event) => {
-    const position = getMousePosition(event);
-    camera.position.x = Math.sin(position.x * Math.PI * 2) * 2;
-    camera.position.z = Math.cos(position.x * Math.PI * 2) * 2;
-    camera.position.y = position.y * 3;
-    camera.lookAt(cubeMesh.position);
-});
-  
-function getMousePosition(event) {
-  
-    const position = new Vector2();
-    const bounds = canvas.getBoundingClientRect();
-  
-    position.x = ((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
-    position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
-      
-    return position;
-}
-
-
-// The Renderer
-
+//4 The Renderer
 const renderer = new WebGLRenderer({
-    canvas: canvas,
-  });
-  
+  canvas: canvas,
+});
+
+renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+
+window.addEventListener("resize", () => {
+  camera.aspect = canvas.clientWidth / canvas.clientHeight;
+  camera.updateProjectionMatrix();
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-  
-  window.addEventListener("resize", () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-  });
-
-
-
-// Lights
-
-var light = new DirectionalLight( 0xffffff );
-light.position.set( 0, 1, 1 ).normalize();
-scene.add(light);
-
+});
 
 // Controls
-
 CameraControls.install( { THREE: subsetOfTHREE } ); 
 const clock = new Clock();
 const cameraControls = new CameraControls(camera, canvas);
 
 function animate() {
+
+  sunMesh.rotation.y += 0.005;
+  earthMesh.rotation.y += 0.05;
+
+
   const delta = clock.getDelta();
 	cameraControls.update( delta );
 	renderer.render( scene, camera );

@@ -1,149 +1,106 @@
 import {
-    Scene,
-    BoxGeometry,
-    MeshBasicMaterial,
-    Mesh,
-    PerspectiveCamera,
-    WebGLRenderer,
-    Vector2,
-    Vector3,
-    Vector4,
-    Quaternion,
-    Matrix4,
-    Spherical,
-    Box3,
-    Sphere,
-    Raycaster,
-    MathUtils,
-    MOUSE,
-    Clock,
-    MeshPhongMaterial,
-    DirectionalLight,
-    TextureLoader,
-    LoadingManager
-  } from "three";
-  
-  import CameraControls from 'camera-controls';
-  
-  const subsetOfTHREE = {
-    MOUSE,
-    Vector2,
-    Vector3,
-    Vector4,
-    Quaternion,
-    Matrix4,
-    Spherical,
-    Box3,
-    Sphere,
-    Raycaster,
-    MathUtils: {
-      DEG2RAD: MathUtils.DEG2RAD,
-      clamp: MathUtils.clamp
-    }
-  };
-  
-  const canvas = document.getElementById("three-canvas");
+  Scene,
+  BoxGeometry,
+  MeshBasicMaterial,
+  Mesh,
+  PerspectiveCamera,
+  WebGLRenderer,
+  Vector2,
+  Vector3,
+  Vector4,
+  Quaternion,
+  Matrix4,
+  Spherical,
+  Box3,
+  Sphere,
+  Raycaster,
+  MathUtils,
+  MOUSE,
+  Clock,
+  SphereGeometry,
+  Object3D
+} from "three";
 
-// 1 The scene
+import CameraControls from 'camera-controls';
 
-const scene = new Scene();
-
-    
-//2 The Object
-
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
-
-const loadingManager = new LoadingManager();
-const loadingElem = document.querySelector('#loading');
-const progressBar = loadingElem.querySelector('.progressbar');
-
-const images = [];
-for (let i = 0; i < 6; i++) {
-	images.push(`https://picsum.photos/200/300?random=${i}`);
-}
-
-const textureLoader = new TextureLoader(loadingManager);
-const materials = [
-	new MeshBasicMaterial({ map: textureLoader.load(images[0]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[1]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[2]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[3]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[4]) }),
-	new MeshBasicMaterial({ map: textureLoader.load(images[5]) }),
-];
-
-loadingManager.onLoad = () => {
-	loadingElem.style.display = 'none';
-	const cube = new Mesh(geometry, materials);
-	scene.add(cube);
-}
-
-loadingManager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => {
-	const progress = itemsLoaded / itemsTotal;
-	progressBar.style.transform = `scaleX(${progress})`;
+const subsetOfTHREE = {
+  MOUSE,
+  Vector2,
+  Vector3,
+  Vector4,
+  Quaternion,
+  Matrix4,
+  Spherical,
+  Box3,
+  Sphere,
+  Raycaster,
+  MathUtils: {
+    DEG2RAD: MathUtils.DEG2RAD,
+    clamp: MathUtils.clamp
+  }
 };
 
-    
+const canvas = document.getElementById("three-canvas");
 
-// The Camera
-  
+//1 The scene
+const scene = new Scene();
+
+//2 The Object
+const sphereGeometry = new SphereGeometry(0.5);
+
+const solarSystem = new Object3D();
+scene.add(solarSystem);
+
+const sunMaterial = new MeshBasicMaterial({color: 'yellow' });
+const sunMesh= new Mesh(sphereGeometry, sunMaterial);
+solarSystem.add(sunMesh);
+
+const earthMaterial = new MeshBasicMaterial({color: 'blue' });
+const earthMesh = new Mesh(sphereGeometry, earthMaterial);
+earthMesh.position.set(5, 0, 0);
+sunMesh.add(earthMesh);
+
+const moonMaterial = new MeshBasicMaterial({color: 'white' });
+const moonMesh = new Mesh(sphereGeometry, moonMaterial);
+moonMesh.scale.set(0.5, 0.5, 0.5);
+moonMesh.position.set(1, 0, 0);
+earthMesh.add(moonMesh);
+
+
+//3 The Camera
 const camera = new PerspectiveCamera(
-    75,
-    canvas.clientWidth / canvas.clientHeight
-  );
-  camera.position.z = 3;
-  scene.add(camera);
+  75,
+  canvas.clientWidth / canvas.clientHeight
+);
+camera.position.z = 3;
+camera.position.y = 6;
+camera.lookAt(solarSystem);
+scene.add(camera);
 
-window.addEventListener("mousemove", (event) => {
-    const position = getMousePosition(event);
-    camera.position.x = Math.sin(position.x * Math.PI * 2) * 2;
-    camera.position.z = Math.cos(position.x * Math.PI * 2) * 2;
-    camera.position.y = position.y * 3;
-    camera.lookAt(cubeMesh.position);
-});
-  
-function getMousePosition(event) {
-  
-    const position = new Vector2();
-    const bounds = canvas.getBoundingClientRect();
-  
-    position.x = ((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
-    position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
-      
-    return position;
-}
-
-
-// The Renderer
-
+//4 The Renderer
 const renderer = new WebGLRenderer({
-    canvas: canvas,
-  });
-  
+  canvas: canvas,
+});
+
+renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+
+window.addEventListener("resize", () => {
+  camera.aspect = canvas.clientWidth / canvas.clientHeight;
+  camera.updateProjectionMatrix();
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-  
-  window.addEventListener("resize", () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-  });
-
-
-
-// Lights
-
-var light = new DirectionalLight( 0xffffff );
-light.position.set( 0, 1, 1 ).normalize();
-scene.add(light);
-
+});
 
 // Controls
-
 CameraControls.install( { THREE: subsetOfTHREE } ); 
 const clock = new Clock();
 const cameraControls = new CameraControls(camera, canvas);
 
 function animate() {
+
+  sunMesh.rotation.y += 0.005;
+  earthMesh.rotation.y += 0.05;
+
+
   const delta = clock.getDelta();
 	cameraControls.update( delta );
 	renderer.render( scene, camera );

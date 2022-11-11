@@ -18,7 +18,8 @@ import {
   MOUSE,
   Clock,
   SphereGeometry,
-  Object3D
+  Object3D,
+  MeshLambertMaterial
 } from "three";
 
 import CameraControls from 'camera-controls';
@@ -51,16 +52,16 @@ const sphereGeometry = new SphereGeometry(0.5);
 const solarSystem = new Object3D();
 scene.add(solarSystem);
 
-const sunMaterial = new MeshBasicMaterial({color: 'yellow' });
+const sunMaterial = new MeshLambertMaterial({color: 'yellow' });
 const sunMesh= new Mesh(sphereGeometry, sunMaterial);
 solarSystem.add(sunMesh);
 
-const earthMaterial = new MeshBasicMaterial({color: 'blue' });
+const earthMaterial = new MeshLambertMaterial({color: 'blue' });
 const earthMesh = new Mesh(sphereGeometry, earthMaterial);
 earthMesh.position.set(5, 0, 0);
 sunMesh.add(earthMesh);
 
-const moonMaterial = new MeshBasicMaterial({color: 'white' });
+const moonMaterial = new MeshLambertMaterial({color: 'white' });
 const moonMesh = new Mesh(sphereGeometry, moonMaterial);
 moonMesh.scale.set(0.5, 0.5, 0.5);
 moonMesh.position.set(1, 0, 0);

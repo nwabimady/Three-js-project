@@ -3,7 +3,6 @@ import {
   BoxGeometry,
   MeshBasicMaterial,
   Mesh,
-  Color,
   PerspectiveCamera,
   WebGLRenderer,
   Vector2,
@@ -14,6 +13,7 @@ import {
   Spherical,
   Box3,
   Sphere,
+  Color,
   Raycaster,
   MathUtils,
   MOUSE,
@@ -21,12 +21,18 @@ import {
   SphereGeometry,
   Object3D,
   MeshLambertMaterial,
+  AmbientLight,
   MeshPhongMaterial,
   AxesHelper,
-  GridHelper
+  GridHelper,
+  DirectionalLight
 } from "three";
 
 import CameraControls from 'camera-controls';
+
+import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+
+
 
 const subsetOfTHREE = {
   MOUSE,
@@ -64,30 +70,19 @@ scene.add(grid);
 
 //2 The Object
 
-const geometry = new BoxGeometry(2,1,3);
-const material = new MeshPhongMaterial({ 	
-  color: 'pink',
-  specular: 'white',
-  shininess: 100,
-  flatShading: true, 
-});
-const mesh = new Mesh(geometry, material);
-scene.add(mesh)
+const geometry = new BoxGeometry( 1, 1, 1);
+const material = new MeshPhongMaterial({ color:'pink' });
+const cube = new Mesh(geometry, material);
+scene.add(cube);
 
-// const sunMaterial = new MeshLambertMaterial({color: 'yellow' });
-// const sunMesh= new Mesh(sphereGeometry, sunMaterial);
-// solarSystem.add(sunMesh);
 
-// const earthMaterial = new MeshLambertMaterial({color: 'blue' });
-// const earthMesh = new Mesh(sphereGeometry, earthMaterial);
-// earthMesh.position.set(5, 0, 0);
-// sunMesh.add(earthMesh);
+// Light
 
-// const moonMaterial = new MeshLambertMaterial({color: 'white' });
-// const moonMesh = new Mesh(sphereGeometry, moonMaterial);
-// moonMesh.scale.set(0.5, 0.5, 0.5);
-// moonMesh.position.set(1, 0, 0);
-// earthMesh.add(moonMesh);
+const color = 0xFFFFFF;
+const intensity = 1;
+const light = new DirectionalLight(color, intensity);
+light.position.set(0.4,5,2);
+scene.add(light);
 
 
 //3 The Camera
@@ -101,6 +96,8 @@ camera.position.x = 4;
 
 camera.lookAt(axes.position);
 scene.add(camera);
+
+
 
 //4 The Renderer
 const renderer = new WebGLRenderer({
@@ -131,3 +128,39 @@ function animate() {
 }
 
 animate();
+
+// Debugging
+
+const gui = new GUI();
+
+const min = -3;
+const max = 3;
+const step = 0.01;
+
+const transformationFolder = gui.addFolder('Transformation');
+
+gui.add(cube.position, 'x').min(-3).max(3).step(0.01).name('X-axis');
+gui.add(cube.position, 'z').min(-3).max(3).step(0.01).name('Z-axis');
+gui.add(cube.position, 'y').min(-3).max(3).step(0.01).name('Y-axis');
+
+gui.addFolder('Visibility').add(cube, 'visible');
+gui.add(cube, 'visible').name('Cube visibility');
+gui.addFolder('Light2').add(material, "wireframe").name("Wireframe");
+
+const colorParam = {
+	color: 0xff0000	
+}
+
+gui.addColor(colorParam, 'color').onChange(() => {
+	cubeMesh.material.color.set(colorParam.color);
+})
+
+import gsap from "gsap";
+
+const functionParam = {
+	spin: () => {
+		gsap.to(cube.rotation, { y: cube.rotation.y +10, duration: 1 });
+	}
+}
+
+gui.add(functionParam, 'spin');

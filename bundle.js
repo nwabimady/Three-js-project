@@ -33023,127 +33023,6 @@ function toJSON( shapes, data ) {
 
 }
 
-class SphereGeometry extends BufferGeometry {
-
-	constructor( radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI ) {
-
-		super();
-		this.type = 'SphereGeometry';
-
-		this.parameters = {
-			radius: radius,
-			widthSegments: widthSegments,
-			heightSegments: heightSegments,
-			phiStart: phiStart,
-			phiLength: phiLength,
-			thetaStart: thetaStart,
-			thetaLength: thetaLength
-		};
-
-		widthSegments = Math.max( 3, Math.floor( widthSegments ) );
-		heightSegments = Math.max( 2, Math.floor( heightSegments ) );
-
-		const thetaEnd = Math.min( thetaStart + thetaLength, Math.PI );
-
-		let index = 0;
-		const grid = [];
-
-		const vertex = new Vector3();
-		const normal = new Vector3();
-
-		// buffers
-
-		const indices = [];
-		const vertices = [];
-		const normals = [];
-		const uvs = [];
-
-		// generate vertices, normals and uvs
-
-		for ( let iy = 0; iy <= heightSegments; iy ++ ) {
-
-			const verticesRow = [];
-
-			const v = iy / heightSegments;
-
-			// special case for the poles
-
-			let uOffset = 0;
-
-			if ( iy == 0 && thetaStart == 0 ) {
-
-				uOffset = 0.5 / widthSegments;
-
-			} else if ( iy == heightSegments && thetaEnd == Math.PI ) {
-
-				uOffset = - 0.5 / widthSegments;
-
-			}
-
-			for ( let ix = 0; ix <= widthSegments; ix ++ ) {
-
-				const u = ix / widthSegments;
-
-				// vertex
-
-				vertex.x = - radius * Math.cos( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
-				vertex.y = radius * Math.cos( thetaStart + v * thetaLength );
-				vertex.z = radius * Math.sin( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
-
-				vertices.push( vertex.x, vertex.y, vertex.z );
-
-				// normal
-
-				normal.copy( vertex ).normalize();
-				normals.push( normal.x, normal.y, normal.z );
-
-				// uv
-
-				uvs.push( u + uOffset, 1 - v );
-
-				verticesRow.push( index ++ );
-
-			}
-
-			grid.push( verticesRow );
-
-		}
-
-		// indices
-
-		for ( let iy = 0; iy < heightSegments; iy ++ ) {
-
-			for ( let ix = 0; ix < widthSegments; ix ++ ) {
-
-				const a = grid[ iy ][ ix + 1 ];
-				const b = grid[ iy ][ ix ];
-				const c = grid[ iy + 1 ][ ix ];
-				const d = grid[ iy + 1 ][ ix + 1 ];
-
-				if ( iy !== 0 || thetaStart > 0 ) indices.push( a, b, d );
-				if ( iy !== heightSegments - 1 || thetaEnd < Math.PI ) indices.push( b, c, d );
-
-			}
-
-		}
-
-		// build geometry
-
-		this.setIndex( indices );
-		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
-		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
-		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
-
-	}
-
-	static fromJSON( data ) {
-
-		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
-
-	}
-
-}
-
 /**
  * parameters = {
  *  color: <THREE.Color>
@@ -41130,6 +41009,66 @@ class GridHelper extends LineSegments {
 
 }
 
+class AxesHelper extends LineSegments {
+
+	constructor( size = 1 ) {
+
+		const vertices = [
+			0, 0, 0,	size, 0, 0,
+			0, 0, 0,	0, size, 0,
+			0, 0, 0,	0, 0, size
+		];
+
+		const colors = [
+			1, 0, 0,	1, 0.6, 0,
+			0, 1, 0,	0.6, 1, 0,
+			0, 0, 1,	0, 0.6, 1
+		];
+
+		const geometry = new BufferGeometry();
+		geometry.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		geometry.setAttribute( 'color', new Float32BufferAttribute( colors, 3 ) );
+
+		const material = new LineBasicMaterial( { vertexColors: true, toneMapped: false } );
+
+		super( geometry, material );
+
+		this.type = 'AxesHelper';
+
+	}
+
+	setColors( xAxisColor, yAxisColor, zAxisColor ) {
+
+		const color = new Color();
+		const array = this.geometry.attributes.color.array;
+
+		color.set( xAxisColor );
+		color.toArray( array, 0 );
+		color.toArray( array, 3 );
+
+		color.set( yAxisColor );
+		color.toArray( array, 6 );
+		color.toArray( array, 9 );
+
+		color.set( zAxisColor );
+		color.toArray( array, 12 );
+		color.toArray( array, 15 );
+
+		this.geometry.attributes.color.needsUpdate = true;
+
+		return this;
+
+	}
+
+	dispose() {
+
+		this.geometry.dispose();
+		this.material.dispose();
+
+	}
+
+}
+
 const _floatView = new Float32Array( 1 );
 new Int32Array( _floatView.buffer );
 
@@ -44815,31 +44754,49 @@ const subsetOfTHREE = {
   }
 };
 
-const canvas = document.getElementById("three-canvas");
 
 //1 The scene
+
 const scene = new Scene();
+const canvas = document.getElementById("three-canvas");
+
+const axes = new AxesHelper();
+axes.material.depthTest = false;
+axes.renderOrder = 2;
+scene.add(axes);
+
+const grid = new GridHelper();
+grid.material.depthTest = false;
+grid.renderOrder = 1;
+scene.add(grid);
+
 
 //2 The Object
-const sphereGeometry = new SphereGeometry(0.5);
 
-const solarSystem = new Object3D();
-scene.add(solarSystem);
+const geometry = new BoxGeometry(2,1,3);
+const material = new MeshPhongMaterial({ 	
+  color: 'pink',
+  specular: 'white',
+  shininess: 100,
+  flatShading: true, 
+});
+const mesh = new Mesh(geometry, material);
+scene.add(mesh);
 
-const sunMaterial = new MeshLambertMaterial({color: 'yellow' });
-const sunMesh= new Mesh(sphereGeometry, sunMaterial);
-solarSystem.add(sunMesh);
+// const sunMaterial = new MeshLambertMaterial({color: 'yellow' });
+// const sunMesh= new Mesh(sphereGeometry, sunMaterial);
+// solarSystem.add(sunMesh);
 
-const earthMaterial = new MeshLambertMaterial({color: 'blue' });
-const earthMesh = new Mesh(sphereGeometry, earthMaterial);
-earthMesh.position.set(5, 0, 0);
-sunMesh.add(earthMesh);
+// const earthMaterial = new MeshLambertMaterial({color: 'blue' });
+// const earthMesh = new Mesh(sphereGeometry, earthMaterial);
+// earthMesh.position.set(5, 0, 0);
+// sunMesh.add(earthMesh);
 
-const moonMaterial = new MeshLambertMaterial({color: 'white' });
-const moonMesh = new Mesh(sphereGeometry, moonMaterial);
-moonMesh.scale.set(0.5, 0.5, 0.5);
-moonMesh.position.set(1, 0, 0);
-earthMesh.add(moonMesh);
+// const moonMaterial = new MeshLambertMaterial({color: 'white' });
+// const moonMesh = new Mesh(sphereGeometry, moonMaterial);
+// moonMesh.scale.set(0.5, 0.5, 0.5);
+// moonMesh.position.set(1, 0, 0);
+// earthMesh.add(moonMesh);
 
 
 //3 The Camera
@@ -44847,9 +44804,11 @@ const camera = new PerspectiveCamera(
   75,
   canvas.clientWidth / canvas.clientHeight
 );
-camera.position.z = 3;
+camera.position.z = 5;
 camera.position.y = 6;
-camera.lookAt(solarSystem);
+camera.position.x = 4;
+
+camera.lookAt(axes.position);
 scene.add(camera);
 
 //4 The Renderer
@@ -44864,6 +44823,8 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 });
+renderer.setClearColor(0xEEF2F8,1);
+
 
 // Controls
 CameraControls.install( { THREE: subsetOfTHREE } ); 
@@ -44871,10 +44832,6 @@ const clock = new Clock();
 const cameraControls = new CameraControls(camera, canvas);
 
 function animate() {
-
-  sunMesh.rotation.y += 0.005;
-  earthMesh.rotation.y += 0.05;
-
 
   const delta = clock.getDelta();
 	cameraControls.update( delta );

@@ -25,7 +25,10 @@ import {
   MeshPhongMaterial,
   AxesHelper,
   GridHelper,
-  DirectionalLight
+  DirectionalLight,
+  EdgesGeometry,
+  LineBasicMaterial,
+  LineSegments
 } from "three";
 
 import CameraControls from 'camera-controls';
@@ -63,7 +66,6 @@ axes.renderOrder = 2;
 scene.add(axes);
 
 const grid = new GridHelper();
-grid.material.depthTest = false;
 grid.renderOrder = 1;
 scene.add(grid);
 
@@ -71,10 +73,20 @@ scene.add(grid);
 //2 The Object
 
 const geometry = new BoxGeometry( 1, 1, 1);
-const material = new MeshPhongMaterial({ color:'pink' });
+const material = new MeshBasicMaterial({ 
+  color:'white',
+  polygonOffset: true,
+  polygonOffsetFactor:  1,
+  polygonOffsetUnits: 1,
+});
 const cube = new Mesh(geometry, material);
 scene.add(cube);
+cube.position.x += 2;
 
+const edgesGeo = new EdgesGeometry(geometry);
+const edgesMaterial = new LineBasicMaterial({color: 0x000000});
+const wireframe= new LineSegments(edgesGeo,edgesMaterial);
+cube.add(wireframe);
 
 // Light
 

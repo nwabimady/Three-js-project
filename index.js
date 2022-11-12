@@ -33,8 +33,7 @@ import {
 
 import CameraControls from 'camera-controls';
 
-import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 
 const subsetOfTHREE = {
@@ -71,30 +70,39 @@ scene.add(grid);
 
 
 //2 The Object
+const loader = new GLTFLoader();
 
-const geometry = new BoxGeometry( 1, 1, 1);
-const material = new MeshBasicMaterial({ 
-  color:'white',
-  polygonOffset: true,
-  polygonOffsetFactor:  1,
-  polygonOffsetUnits: 1,
-});
-const cube = new Mesh(geometry, material);
-scene.add(cube);
-cube.position.x += 2;
+const loadingElem = document.querySelector('#loader-container');
+const loadingText = loadingElem.querySelector('p');
 
-const edgesGeo = new EdgesGeometry(geometry);
-const edgesMaterial = new LineBasicMaterial({color: 0x000000});
-const wireframe= new LineSegments(edgesGeo,edgesMaterial);
-cube.add(wireframe);
+loader.load('./police_station.glb',
+
+	( gltf ) => {
+    loadingElem.style.display = 'none';
+		scene.add( gltf.scene );
+	},
+
+	( progress ) => {
+    const current = (progress.loaded /  progress.total) * 100;
+    const formatted = Math.trunc(current * 100) / 100; 
+    loadingText.textContent = `Loading: ${formatted}%`;
+	},
+
+	( error ) => {
+
+		console.log( 'An error happened: ', error );
+
+	}
+);
+
 
 // Light
 
-const color = 0xFFFFFF;
-const intensity = 1;
-const light = new DirectionalLight(color, intensity);
-light.position.set(0.4,5,2);
-scene.add(light);
+const light = new DirectionalLight(0xffffff, 1);
+light.position.set(1, 1, 0.5);
+const baseLight = new AmbientLight(0xffffff, 1);
+scene.add(light, baseLight);
+
 
 
 //3 The Camera
@@ -130,6 +138,10 @@ renderer.setClearColor(0xEEF2F8,1);
 CameraControls.install( { THREE: subsetOfTHREE } ); 
 const clock = new Clock();
 const cameraControls = new CameraControls(camera, canvas);
+cameraControls.dollyToCursor = true;
+
+cameraControls.setLookAt(18, 20, 18, 0, 10, 0);
+
 
 function animate() {
 
@@ -142,37 +154,3 @@ function animate() {
 animate();
 
 // Debugging
-
-const gui = new GUI();
-
-const min = -3;
-const max = 3;
-const step = 0.01;
-
-const transformationFolder = gui.addFolder('Transformation');
-
-gui.add(cube.position, 'x').min(-3).max(3).step(0.01).name('X-axis');
-gui.add(cube.position, 'z').min(-3).max(3).step(0.01).name('Z-axis');
-gui.add(cube.position, 'y').min(-3).max(3).step(0.01).name('Y-axis');
-
-gui.addFolder('Visibility').add(cube, 'visible');
-gui.add(cube, 'visible').name('Cube visibility');
-gui.addFolder('Light2').add(material, "wireframe").name("Wireframe");
-
-const colorParam = {
-	color: 0xff0000	
-}
-
-gui.addColor(colorParam, 'color').onChange(() => {
-	cubeMesh.material.color.set(colorParam.color);
-})
-
-import gsap from "gsap";
-
-const functionParam = {
-	spin: () => {
-		gsap.to(cube.rotation, { y: cube.rotation.y +10, duration: 1 });
-	}
-}
-
-gui.add(functionParam, 'spin');

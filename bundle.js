@@ -49325,30 +49325,36 @@ scene.add(grid);
 
 
 //2 The Object
-const loader = new GLTFLoader();
 
-const loadingElem = document.querySelector('#loader-container');
-const loadingText = loadingElem.querySelector('p');
+const geometry = new BoxGeometry(0.5, 0.5, 0.5);
 
-loader.load('./police_station.glb',
+const blue = 0x000099;
+const green = 0x009900;
+const red = 0x990000;
 
-	( gltf ) => {
-    loadingElem.style.display = 'none';
-		scene.add( gltf.scene );
-	},
+const blueMaterial = new MeshLambertMaterial({ color: blue });
+const greenMaterial = new MeshLambertMaterial({ color: green });
+const redMaterial = new MeshLambertMaterial({ color: red });
 
-	( progress ) => {
-    const current = (progress.loaded /  progress.total) * 100;
-    const formatted = Math.trunc(current * 100) / 100; 
-    loadingText.textContent = `Loading: ${formatted}%`;
-	},
+const cube = new Mesh(geometry, blueMaterial);
 
-	( error ) => {
+const cube2 = new Mesh(geometry, greenMaterial);
+cube2.position.x += 1;
 
-		console.log( 'An error happened: ', error );
+const cube3 = new Mesh(geometry, redMaterial);
+cube3.position.x -= 1;
 
-	}
-);
+scene.add(cube, cube2, cube3);
+
+// UUID helper objects
+
+const objectsToTest = { 
+  [cube.uuid]: {object: cube, color: blue},
+  [cube2.uuid]: {object: cube2, color: green},
+  [cube3.uuid]: {object: cube3, color: red}
+};
+
+const objectsArray = Object.values(objectsToTest).map(item => item.object);
 
 
 // Light
@@ -49397,7 +49403,41 @@ cameraControls.dollyToCursor = true;
 
 cameraControls.setLookAt(18, 20, 18, 0, 10, 0);
 
+// Raycaster : Picking
 
+const raycaster = new Raycaster();
+const mouse = new Vector2();
+let previousSelectedUuid;
+
+window.addEventListener('mousemove', (event) => {
+	mouse.x = event.clientX / canvas.clientWidth * 2 - 1;
+	mouse.y = - (event.clientY / canvas.clientHeight) * 2 + 1;
+
+	raycaster.setFromCamera(mouse, camera);
+	const intersects = raycaster.intersectObjects(objectsArray);
+
+  if(!intersects.length) {
+    resetPreviousSelection();
+    return;
+  }
+  const firstIntersection = intersects[0];
+  firstIntersection.object.material.color.set('orange');
+
+  const isNotPrevious = previousSelectedUuid !== firstIntersection.object.uuid;
+	if(previousSelectedUuid !== undefined && isNotPrevious) {
+    resetPreviousSelection();
+  }
+
+  previousSelectedUuid = firstIntersection.object.uuid;
+});
+
+function resetPreviousSelection() {
+  if(previousSelectedUuid === undefined) return;
+  const previousSelected = objectsToTest[previousSelectedUuid];
+  previousSelected.object.material.color.set(previousSelected.color);
+}
+
+// Animation
 function animate() {
 
   const delta = clock.getDelta();

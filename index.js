@@ -35,6 +35,7 @@ import CameraControls from 'camera-controls';
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 const subsetOfTHREE = {
   MOUSE,
@@ -71,35 +72,69 @@ scene.add(grid);
 
 //2 The Object
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
 
-const blue = 0x000099;
-const green = 0x009900;
-const red = 0x990000;
 
-const blueMaterial = new MeshLambertMaterial({ color: blue });
-const greenMaterial = new MeshLambertMaterial({ color: green });
-const redMaterial = new MeshLambertMaterial({ color: red });
+const loader = new GLTFLoader();
 
-const cube = new Mesh(geometry, blueMaterial);
+const loadingElem = document.querySelector('#loader-container');
+const loadingText = loadingElem.querySelector('p');
+let policeStation;
 
-const cube2 = new Mesh(geometry, greenMaterial);
-cube2.position.x += 1;
+ loader.load(	'./police_station.glb',
 
-const cube3 = new Mesh(geometry, redMaterial);
-cube3.position.x -= 1;
+ 
+ ( gltf ) => {
+  policeStation = gltf.scene
+    loadingElem.style.display = 'none';
+    scene.add( policeStation );
+ 
+  },
 
-scene.add(cube, cube2, cube3);
+
+ ( progress ) => {
+   const current = (progress.loaded /  progress.total) * 100;
+   const result = Math.min(current, 100); 
+   const formatted = Math.trunc(result * 100) / 100;
+  loadingText.textContent = `Loading: ${formatted}%`;
+ },
+
+ ( error ) => {
+
+   console.log( 'An error happened: ', error );
+
+ }
+ );
+
+
+// const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+
+// const blue = 0x000099;
+// const green = 0x009900;
+// const red = 0x990000;
+
+// const blueMaterial = new MeshLambertMaterial({ color: blue });
+// const greenMaterial = new MeshLambertMaterial({ color: green });
+// const redMaterial = new MeshLambertMaterial({ color: red });
+
+// const cube = new Mesh(geometry, blueMaterial);
+
+// const cube2 = new Mesh(geometry, greenMaterial);
+// cube2.position.x += 1;
+
+// const cube3 = new Mesh(geometry, redMaterial);
+// cube3.position.x -= 1;
+
+// scene.add(cube, cube2, cube3);
 
 // UUID helper objects
 
-const objectsToTest = { 
-  [cube.uuid]: {object: cube, color: blue},
-  [cube2.uuid]: {object: cube2, color: green},
-  [cube3.uuid]: {object: cube3, color: red}
-};
+// const objectsToTest = { 
+  //   [cube.uuid]: {object: cube, color: blue},
+  //   [cube2.uuid]: {object: cube2, color: green},
+  //   [cube3.uuid]: {object: cube3, color: red}
+// };
 
-const objectsArray = Object.values(objectsToTest).map(item => item.object);
+	// const objectsArray = Object.values(loader).map(item => item.object);
 
 
 // Light
@@ -112,10 +147,7 @@ scene.add(light, baseLight);
 
 
 //3 The Camera
-const camera = new PerspectiveCamera(
-  75,
-  canvas.clientWidth / canvas.clientHeight
-);
+const camera = new PerspectiveCamera( 75, canvas.clientWidth / canvas.clientHeight);
 camera.position.z = 5;
 camera.position.y = 6;
 camera.position.x = 4;
@@ -126,18 +158,27 @@ scene.add(camera);
 
 
 //4 The Renderer
-const renderer = new WebGLRenderer({
-  canvas: canvas,
-});
-
+const renderer = new WebGLRenderer({ canvas });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+renderer.setClearColor(0xEEF2F8,1);
 
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.top = '0';
+document.body.appendChild(labelRenderer.domElement);
+
+
+// Responsivity
 window.addEventListener("resize", () => {
   camera.aspect = canvas.clientWidth / canvas.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 });
-renderer.setClearColor(0xEEF2F8,1);
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
 
 
 // Controls
@@ -152,42 +193,81 @@ cameraControls.setLookAt(18, 20, 18, 0, 10, 0);
 
 const raycaster = new Raycaster();
 const mouse = new Vector2();
-let previousSelectedUuid;
 
-window.addEventListener('mousemove', (event) => {
+window.addEventListener('dblclick', (event) => {
 	mouse.x = event.clientX / canvas.clientWidth * 2 - 1;
 	mouse.y = - (event.clientY / canvas.clientHeight) * 2 + 1;
 
-	raycaster.setFromCamera(mouse, camera)
-	const intersects = raycaster.intersectObjects(objectsArray);
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(policeStation);
 
-  if(!intersects.length) {
-    resetPreviousSelection();
-    return;
-  };
+  if(!intersects.length) return;
 
-  const firstIntersection = intersects[0];
-  firstIntersection.object.material.color.set('orange')
+  const collisionLocation = intersects[0].point;
 
-  const isNotPrevious = previousSelectedUuid !== firstIntersection.object.uuid;
-	if(previousSelectedUuid !== undefined && isNotPrevious) {
-    resetPreviousSelection();
+  const message = window.prompt('Describe issue:');
+
+  const labelBase = document.createElement('div');
+  container.className = 'label-container';
+
+  const label = document.createElement('p');
+  label.textContent = message ;
+  label.classList.add('label');
+  labelBase.appendChild(label);
+
+  const deleteButton =  document.createElement('button');
+  deleteButton.textContent = 'X';
+  deleteButton.className = 'delete-button hidden';
+  container.appendChild(deleteButton);
+
+  const labelObject = new CSS2DObject(container);
+  labelObject.position.copy(collisionLocation);
+  scene.add(labelObject);
+
+  deleteButton.onclick = () => {
+    labelObject.removeFromParent();
+    labelObject.element = null;
+    container.remove();
   }
 
-  previousSelectedUuid = firstIntersection.object.uuid;
-});
+  container.onmouseenter = () => deleteButton.classList.remove('hidden');
+  container.onmmouseleave = () => deleteButton.classList.add('hidden');
 
-function resetPreviousSelection() {
-  if(previousSelectedUuid === undefined) return;
-  const previousSelected = objectsToTest[previousSelectedUuid];
-  previousSelected.object.material.color.set(previousSelected.color);
-}
+})
+
+	
+
+	// let previousSelectedUuid;
+
+
+
+
+
+
+
+	//   const firstIntersection = intersects[0];
+	//   firstIntersection.object.material.color.set('orange')
+
+	//   const isNotPrevious = previousSelectedUuid !== firstIntersection.object.uuid;
+	// 	if(previousSelectedUuid !== undefined && isNotPrevious) {
+	//     resetPreviousSelection();
+	//   }
+
+	//   previousSelectedUuid = firstIntersection.object.uuid;
+	// });
+
+	// function resetPreviousSelection() {
+	//   if(previousSelectedUuid === undefined) return;
+	//   const previousSelected = objectsToTest[previousSelectedUuid];
+	//   previousSelected.object.material.color.set(previousSelected.color);
+	// }
 
 // Animation
 function animate() {
 
   const delta = clock.getDelta();
 	cameraControls.update( delta );
+  labelRenderer.render( scene, camera );
 	renderer.render( scene, camera );
   requestAnimationFrame(animate);
 }

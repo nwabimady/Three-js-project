@@ -39,6 +39,9 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 
 import Stats from 'stats.js/src/Stats';
 
+import {VRButton} from 'three/examples/jsm/webxr/VRButton.js';
+
+
 const subsetOfTHREE = {
   MOUSE,
   Vector2,
@@ -161,10 +164,13 @@ scene.add(camera);
 
 
 //4 The Renderer
+
 const renderer = new WebGLRenderer({ canvas });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 renderer.setClearColor(0xEEF2F8,1);
+
+
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -240,30 +246,15 @@ window.addEventListener('dblclick', (event) => {
 
 	
 
-	// let previousSelectedUuid;
 
 
 
 
+// 8 VR
 
+  const vrButton = VRButton.createButton(renderer);
+document.body.appendChild(vrButton);
 
-
-	//   const firstIntersection = intersects[0];
-	//   firstIntersection.object.material.color.set('orange')
-
-	//   const isNotPrevious = previousSelectedUuid !== firstIntersection.object.uuid;
-	// 	if(previousSelectedUuid !== undefined && isNotPrevious) {
-	//     resetPreviousSelection();
-	//   }
-
-	//   previousSelectedUuid = firstIntersection.object.uuid;
-	// });
-
-	// function resetPreviousSelection() {
-	//   if(previousSelectedUuid === undefined) return;
-	//   const previousSelected = objectsToTest[previousSelectedUuid];
-	//   previousSelected.object.material.color.set(previousSelected.color);
-	// }
 
   // Animation
 
@@ -271,7 +262,7 @@ const stats = new Stats();
 stats.showPanel( 2 );
 document.body.appendChild( stats.dom );
 
-function animate() {
+renderer.setAnimationLoop(() => {
   stats.begin();
 
   const delta = clock.getDelta();
@@ -282,9 +273,5 @@ function animate() {
 
 	stats.end();
 
-  requestAnimationFrame(animate);
-}
+});
 
-animate();
-
-// Debugging

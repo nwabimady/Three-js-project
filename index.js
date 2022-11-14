@@ -78,6 +78,7 @@ const loader = new GLTFLoader();
 
 const loadingElem = document.querySelector('#loader-container');
 const loadingText = loadingElem.querySelector('p');
+
 let policeStation;
 
  loader.load(	'./police_station.glb',
@@ -207,13 +208,13 @@ window.addEventListener('dblclick', (event) => {
 
   const message = window.prompt('Describe issue:');
 
-  const labelBase = document.createElement('div');
+  const container = document.createElement('div');
   container.className = 'label-container';
 
   const label = document.createElement('p');
   label.textContent = message ;
   label.classList.add('label');
-  labelBase.appendChild(label);
+  container.appendChild(label);
 
   const deleteButton =  document.createElement('button');
   deleteButton.textContent = 'X';
@@ -233,7 +234,7 @@ window.addEventListener('dblclick', (event) => {
   container.onmouseenter = () => deleteButton.classList.remove('hidden');
   container.onmmouseleave = () => deleteButton.classList.add('hidden');
 
-})
+});
 
 	
 

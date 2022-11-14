@@ -37,6 +37,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+import Stats from 'stats.js/src/Stats';
+
 const subsetOfTHREE = {
   MOUSE,
   Vector2,
@@ -263,13 +265,23 @@ window.addEventListener('dblclick', (event) => {
 	//   previousSelected.object.material.color.set(previousSelected.color);
 	// }
 
-// Animation
+  // Animation
+
+const stats = new Stats();
+stats.showPanel( 2 );
+document.body.appendChild( stats.dom );
+
 function animate() {
+  stats.begin();
 
   const delta = clock.getDelta();
 	cameraControls.update( delta );
+
   labelRenderer.render( scene, camera );
 	renderer.render( scene, camera );
+
+	stats.end();
+
   requestAnimationFrame(animate);
 }
 

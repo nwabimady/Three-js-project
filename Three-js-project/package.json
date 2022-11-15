@@ -1,0 +1,30 @@
+{
+  "name": "three-js-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "rollup": "^3.2.5"
+  },
+  "dependencies": {
+    "camera-controls": "^1.37.3",
+    "gsap": "^3.11.3",
+    "three": "^0.135.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nwabimady/Three-js-project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nwabimady/Three-js-project/issues"
+  },
+  "homepage": "https://github.com/nwabimady/Three-js-project#readme"
+}

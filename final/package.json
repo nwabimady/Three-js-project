@@ -1,0 +1,41 @@
+{
+  "name": "three-js-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "builtin-modules": "^3.3.0",
+    "camera-controls": "^1.37.3",
+    "deepmerge": "^4.2.2",
+    "estree-walker": "^2.0.2",
+    "function-bind": "^1.1.1",
+    "gsap": "^3.11.3",
+    "has": "^1.0.3",
+    "is-builtin-module": "^3.2.0",
+    "is-core-module": "^2.11.0",
+    "is-module": "^1.0.0",
+    "path-parse": "^1.0.7",
+    "picomatch": "^2.3.1",
+    "resolve": "^1.22.1",
+    "rollup": "^3.2.5",
+    "stats.js": "^0.17.0",
+    "supports-preserve-symlinks-flag": "^1.0.0",
+    "three": "^0.135.0",
+    "three-orbitcontrols-ts": "^0.1.2"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nwabimady/Three-js-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nwabimady/Three-js-project/issues"
+  },
+  "homepage": "https://github.com/nwabimady/Three-js-project#readme"
+}
